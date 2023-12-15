@@ -186,7 +186,7 @@ services:
     environment:
       USE_DEV_MODE: ${USE_DEV_MODE}
 
-  # Container that runs a elixir exmaple
+  # Container that runs a elixir example
   elixir-example:
     container_name: elixir-example
     build: docker/images/elixir
