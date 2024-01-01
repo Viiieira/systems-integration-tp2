@@ -4,6 +4,7 @@ CREATE TABLE public.imported_documents (
 	xml             XML NOT NULL,
 	created_on      TIMESTAMP NOT NULL DEFAULT NOW(),
 	updated_on      TIMESTAMP NOT NULL DEFAULT NOW(),
+	deleted         BOOLEAN NOT NULL DEFAULT FALSE,
     deleted_on      TIMESTAMP NOT NULL DEFAULT NOW()
 );
 

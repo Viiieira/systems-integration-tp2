@@ -4,9 +4,10 @@ import xml.etree.ElementTree as ET
 
 from utils.reader import CSVReader
 from entities.country import Country
-from entities.team import Team
-from entities.player import Player
-
+from entities.province import Province
+from entities.wine import Wine
+from entities.winery import Winery
+from entities.taster import Taster
 
 class CSVtoXMLConverter:
 
@@ -16,45 +17,81 @@ class CSVtoXMLConverter:
     def to_xml(self):
         # read countries
         countries = self._reader.read_entities(
-            attr="nationality",
-            builder=lambda row: Country(row["nationality"])
+            attr="country",
+            builder=lambda row: Country(row["country"])
         )
 
-        # read teams
-        teams = self._reader.read_entities(
-            attr="Current Club",
-            builder=lambda row: Team(row["Current Club"])
+        # read provinces
+        provinces = self._reader.read_entities(
+            attr="province",
+            builder=lambda row: Province(
+                name=row["province"],
+                country=countries[row["country"]],
+            )
         )
 
-        # read players
+         # read tasters
+        tasters = self._reader.read_entities(
+            attr="taster_name",
+            builder=lambda row: Taster(row["taster_name"], row["taster_twitter_handle"])
+        )
 
-        def after_creating_player(player, row):
-            # add the player to the appropriate team
-            teams[row["Current Club"]].add_player(player)
+         # read wineries
+        wineries = self._reader.read_entities(
+            attr="winery",
+            builder=lambda row: Winery(row["winery"], provinces[row["province"]])
+        )
 
-        self._reader.read_entities(
-            attr="full_name",
-            builder=lambda row: Player(
-                name=row["full_name"],
-                age=row["age"],
-                country=countries[row["nationality"]]
+        def after_creating_province(province, row):
+            # add the province to the appropriate country
+            countries[row["country"]].add_province(province)
+
+        def after_creating_wine(wine, row):
+            # add the wine to the appropriate province
+            provinces[row["province"]].add_wine(wine)
+
+        provinces = self._reader.read_entities(
+            attr="province",
+            builder=lambda row: Province(
+                name=row["province"],
+                country=countries[row["country"]],
             ),
-            after_create=after_creating_player
+            after_create=after_creating_province
         )
+
+        wines = self._reader.read_entities(
+            attr="designation",
+            builder=lambda row: Wine(
+                name=row["designation"],
+                points=row["points"],
+                price=row["price"],
+                variety=row["variety"],
+                province=provinces[row["province"]],
+                taster=tasters[row["taster_name"]],
+                winery=wineries[row["winery"]]
+            ),
+            after_create=after_creating_wine
+        )
+
 
         # generate the final xml
-        root_el = ET.Element("Football")
-
-        teams_el = ET.Element("Teams")
-        for team in teams.values():
-            teams_el.append(team.to_xml())
+        root_el = ET.Element("WineReviews")
 
         countries_el = ET.Element("Countries")
         for country in countries.values():
             countries_el.append(country.to_xml())
 
-        root_el.append(teams_el)
+        wineries_el = ET.Element("Wineries")
+        for winery in wineries.values():
+            wineries_el.append(winery.to_xml())
+
+        tasters_el = ET.Element("Tasters")
+        for taster in tasters.values():
+            tasters_el.append(taster.to_xml())
+
         root_el.append(countries_el)
+        root_el.append(wineries_el)
+        root_el.append(tasters_el)
 
         return root_el
 
