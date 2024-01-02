@@ -2,6 +2,8 @@ import asyncio
 import time
 import uuid
 
+from utils.execute_query import execute_query
+
 import os
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, FileCreatedEvent
@@ -25,33 +27,53 @@ class CSVHandler(FileSystemEventHandler):
         self._output_path = output_path
         self._input_path = input_path
 
-        # generate file creation events for existing files
+        # Generate file creation events for existing files
         for file in [os.path.join(dp, f) for dp, dn, filenames in os.walk(input_path) for f in filenames]:
             event = FileCreatedEvent(os.path.join(CSV_INPUT_PATH, file))
             event.event_type = "created"
             self.dispatch(event)
 
     async def convert_csv(self, csv_path):
-        # here we avoid converting the same file again
-        # !TODO: check converted files in the database
-        if csv_path in await self.get_converted_files():
+        # Check if the CSV file has already been converted
+        converted_files = await self.get_converted_files()
+        csv_filename = os.path.basename(csv_path)
+        if csv_filename in converted_files:
+            print(f"File '{csv_path}' has already been converted. Skipping.")
             return
 
         print(f"new file to convert: '{csv_path}'")
 
-        # we generate a unique file name for the XML file
+
+        # Generate a unique file name for the XML file
         xml_path = generate_unique_file_name(self._output_path)
 
-        # we do the conversion
-        # !TODO: once the conversion is done, we should updated the converted_documents tables
+        # Conversion from CSV to XML
         convert_csv_to_xml(csv_path, xml_path)
         print(f"new xml file generated: '{xml_path}'")
 
-        # !TODO: we should store the XML document into the imported_documents table
+        # Update the converted_documents table
+        query = "INSERT INTO converted_documents (src, file_size, dst) VALUES (%s, %s, %s)"
+        params = (os.path.basename(csv_path), os.path.getsize(csv_path), os.path.basename(xml_path))
+        execute_query(query, params)
+
+        # Read the XML content from the generated file
+        with open(xml_path, 'r') as xml_file:
+            xml_content = xml_file.read()
+
+        # Store the XML document into the imported_documents table
+        query = "INSERT INTO imported_documents (file_name, xml) VALUES (%s, %s)"
+        params = (os.path.basename(xml_path), xml_content)
+        execute_query(query, params)
 
     async def get_converted_files(self):
-        # !TODO: you should retrieve from the database the files that were already converted before
-        return []
+        # Fetch the list of converted files from the database
+        query = "SELECT src FROM converted_documents"
+        result = execute_query(query)
+        
+        # Extract the 'src' values from the result
+        converted_files = [row[0] for row in result]
+
+        return converted_files
 
     def on_created(self, event):
         if not event.is_directory and event.src_path.endswith(".csv"):
