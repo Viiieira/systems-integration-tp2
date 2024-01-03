@@ -5,7 +5,8 @@ CREATE TABLE public.imported_documents (
 	created_on      TIMESTAMP NOT NULL DEFAULT NOW(),
 	updated_on      TIMESTAMP NOT NULL DEFAULT NOW(),
 	deleted         BOOLEAN NOT NULL DEFAULT FALSE,
-    deleted_on      TIMESTAMP NOT NULL DEFAULT NOW()
+    deleted_on      TIMESTAMP NOT NULL DEFAULT NOW(),
+    migrated        BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE public.converted_documents (
