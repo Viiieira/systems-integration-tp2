@@ -3,7 +3,13 @@ import time
 
 import psycopg2
 from psycopg2 import OperationalError
-from functions.execute_query import execute_query
+
+from functions.changes_check import changes_check
+from functions.extract_countries import extract_countries
+from functions.extract_provinces import extract_provinces
+
+from functions.insert_countries import insert_countries
+from functions.insert_provinces import insert_provinces
 
 POLLING_FREQ = int(sys.argv[1]) if len(sys.argv) >= 2 else 60
 
@@ -72,50 +78,40 @@ if __name__ == "__main__":
             continue
 
         print("Checking updates...")
-        # !TODO: 1- Execute a SELECT query to check for any changes on the table
+        # TODO: 1- Execute a SELECT query to check for any changes on the table
         try:
-            query_todo1 = "SELECT id, file_name FROM imported_documents WHERE migrated = false"
-            results_todo1 = execute_query(query_todo1, connection=db_org)
-            print("Query Results for TODO 1:")
-            for row in results_todo1:
-                document_id, file_name = row
-                print(f"Found new document (ID: {document_id}) with file name: {file_name}")
-
+            changes_check(db_org)
         except Exception as e:
             print(f"An error occurred during TODO 1: {e}")
 
 
-        # !TODO: 2- Execute a SELECT queries with xpath to retrieve the data we want to store in the relational db
+        # TODO: 2- Execute a SELECT queries with xpath to retrieve the data we want to store in the relational db
+        country_data = extract_countries(db_org)
+        province_data = extract_provinces(db_org)
+
+        if country_data:
+            for country in country_data:
+                country = country.strip('{}').strip('"')
+                print(f"> {country}")
+        else:
+            print("There are no countries")
+
+        # Print province data
+        if province_data:
+            for province in province_data:
+                print(f"> Province: {province['name']}, Latitude: {province['latitude']}, Longitude: {province['longitude']}")
+        else:
+            print("There are no provinces")
+
+        # TODO: 3- Execute INSERT queries in the destination db
         try:
-            query = "SELECT xpath('/WineReviews/Countries/Country/@*', xml) AS country_info FROM public.imported_documents;"
+            # Using the function from the separate file to insert into the destination database
+            insert_countries(db_dst, country_data)
 
-            results = execute_query(query, connection=db_org)
-
-            if len(results) > 0:
-                # Extracting the country information from the result
-                country_info_str = results[0][0]
-
-                # Handling the case when there are multiple country information
-                if country_info_str:
-                    country_info_list = country_info_str.split(',')
-
-                    # Iterating over the list and printing each country information without curly braces
-                    for country_info in country_info_list:
-                        # Removing curly braces if present
-                        country_info = country_info.strip('{}')
-
-                        print(f"> {country_info.strip()}")
-                else:
-                    print("There are no countries")
-            else:
-                print("There are no countries in the result")
+            insert_provinces(db_dst, province_data)
 
         except Exception as e:
-            print(f"Error executing query: {e}")
-
-
-        # !TODO: 3- Execute INSERT queries in the destination db
-    
+            print(f"Error executing INSERT queries: {e}")
 
         # !TODO: 4- Make sure we store somehow in the origin database that certain records were already migrated.
         #          Change the db structure if needed.
