@@ -18,6 +18,7 @@ def extract_provinces(connection):
 
             for row in results:
                 province_name, country_ref, latitude, longitude = row
+
                 province_data_list.append({
                     "name": province_name,
                     "country_ref": country_ref,

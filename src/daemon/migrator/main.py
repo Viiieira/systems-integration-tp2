@@ -99,7 +99,7 @@ if __name__ == "__main__":
         # Print province data
         if province_data:
             for province in province_data:
-                print(f"> Province: {province['name']}, Latitude: {province['latitude']}, Longitude: {province['longitude']}")
+                print(f"> Province: {province['name']}, Country_ref: {province['country_ref']} , Latitude: {province['latitude']}, Longitude: {province['longitude']}")
         else:
             print("There are no provinces")
 
