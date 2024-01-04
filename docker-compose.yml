@@ -48,6 +48,20 @@ services:
       - db-xml
       - db-rel
 
+  # Container that listens for unmigrated files
+  watcher:
+    container_name: watcher
+    build: docker/images/golang
+    volumes:
+      - ./src/daemon/watcher:/usr/src/app
+      - ./docker/volumes/xml:/xml
+    environment:
+      USE_DEV_MODE: ${USE_DEV_MODE}
+      POLLING_FREQ: ${POLLING_FREQ}
+    depends_on:
+      - db-xml
+      - db-rel
+
   # Container that automatically migrates data from db-xml to db-rel
   gis-updater:
     container_name: gis-updater

@@ -44,7 +44,6 @@ func main() {
 	}
 
 	fmt.Println("\nSuccessfully connected to the database!")
-
-	fmt.Println("Hello, World!!")
+	
 	checkUnmigratedFiles(db)
 }
