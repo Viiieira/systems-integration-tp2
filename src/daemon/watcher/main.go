@@ -43,7 +43,17 @@ type WineReviews struct {
 }
 
 func sendMessageToBroker(countryName string) {
-	conn, err := amqp.Dial("amqp://$RABBITMQ_DEFAULT_USER:$RABBITMQ_DEFAULT_PASS@localhost:5672/$RABBITMQ_DEFAULT_VHOST")
+	rabbitMQUser := os.Getenv("RABBITMQ_DEFAULT_USER")
+	rabbitMQPass := os.Getenv("RABBITMQ_DEFAULT_PASS")
+	rabbitMQVHost := os.Getenv("RABBITMQ_DEFAULT_VHOST")
+	rabbitMQHost := "localhost"
+	rabbitMQPort := 5672
+
+	// Create the connection string
+	connectionString := fmt.Sprintf("amqp://%s:%s@%s:%d/%s", rabbitMQUser, rabbitMQPass, rabbitMQHost, rabbitMQPort, rabbitMQVHost)
+
+	// Create a new AMQP connection
+	conn, err := amqp.Dial(connectionString)
 	CheckError(err)
 	defer conn.Close()
 
