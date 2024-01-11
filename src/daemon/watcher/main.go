@@ -42,46 +42,56 @@ type WineReviews struct {
 	Countries []Country `xml:"Countries>Country"`
 }
 
-func sendMessageToBroker(countryName string) {
-	rabbitMQUser := os.Getenv("RABBITMQ_DEFAULT_USER")
-	rabbitMQPass := os.Getenv("RABBITMQ_DEFAULT_PASS")
-	rabbitMQVHost := os.Getenv("RABBITMQ_DEFAULT_VHOST")
-	rabbitMQHost := "localhost"
-	rabbitMQPort := 5672
+func sendMessageToBroker(countryName string) bool {
+    // Create the connection string
+    connectionString := fmt.Sprintf("amqp://is:is@broker:5672/is")
 
-	// Create the connection string
-	connectionString := fmt.Sprintf("amqp://%s:%s@%s:%d/%s", rabbitMQUser, rabbitMQPass, rabbitMQHost, rabbitMQPort, rabbitMQVHost)
+    // Create a new AMQP connection
+    conn, err := amqp.Dial(connectionString)
+    if err != nil {
+        CheckError(err)
+        return false
+    }
+    defer conn.Close()
 
-	// Create a new AMQP connection
-	conn, err := amqp.Dial(connectionString)
-	CheckError(err)
-	defer conn.Close()
+    ch, err := conn.Channel()
+    if err != nil {
+        CheckError(err)
+        return false
+    }
+    defer ch.Close()
 
-	ch, err := conn.Channel()
-	CheckError(err)
-	defer ch.Close()
+    q, err := ch.QueueDeclare(
+        "import_queue", // Queue name
+        false,          // Durable
+        false,          // Delete when unused
+        false,          // Exclusive
+        false,          // No-wait
+        nil,            // Arguments
+    )
+    if err != nil {
+        CheckError(err)
+        return false
+    }
 
-	q, err := ch.QueueDeclare(
-		"import_queue", // Queue name
-		false,          // Durable
-		false,          // Delete when unused
-		false,          // Exclusive
-		false,          // No-wait
-		nil,            // Arguments
-	)
-	CheckError(err)
+    err = ch.Publish(
+        "",           // Exchange
+        q.Name,       // Routing key
+        false,        // Mandatory
+        false,        // Immediate
+        amqp.Publishing{
+            ContentType: "text/plain",
+            Body:        []byte(fmt.Sprintf("Import country: %s", countryName)),
+        },
+    )
+    if err != nil {
+        CheckError(err)
+        return false
+    }
 
-	err = ch.Publish(
-		"",           // Exchange
-		q.Name,       // Routing key
-		false,        // Mandatory
-		false,        // Immediate
-		amqp.Publishing{
-			ContentType: "text/plain",
-			Body:        []byte(fmt.Sprintf("Import country: %s", countryName)),
-		},
-	)
-	CheckError(err)
+    // Print success message
+    fmt.Println("Successfully sent message to RabbitMQ")
+    return true
 }
 
 func checkUnmigratedFiles(db *sql.DB) {
@@ -114,13 +124,12 @@ func checkUnmigratedFiles(db *sql.DB) {
 func processWineReviews(wineReviews WineReviews) {
 	for _, country := range wineReviews.Countries {
 		fmt.Printf("Country: %s\n", country.Name)
-		sendMessageToBroker(country.Name) // Send message to the broker for each country
+		sendMessageToBroker(country.Name)
 
 		for _, province := range country.Provinces {
 			fmt.Printf("\tProvince: %s\n", province.Name)
 			for _, wine := range province.Wines {
 				fmt.Printf("\t\tWine: %s\n", wine.Name)
-				// Add your logic here based on the wine entity
 			}
 		}
 	}
@@ -144,6 +153,14 @@ func main() {
 	}
 
 	fmt.Println("\nSuccessfully connected to the database!")
+
+	// Check RabbitMQ connection and print success message
+    if success := sendMessageToBroker("exampleCountry"); success {
+        fmt.Println("RabbitMQ connection is successful!")
+    } else {
+        fmt.Println("Failed to send message to RabbitMQ")
+    }
+
 
 	checkUnmigratedFiles(db)
 }
