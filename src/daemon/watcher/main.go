@@ -44,7 +44,7 @@ type WineReviews struct {
 
 func sendMessageToBroker(countryName string) bool {
     // Create the connection string
-    connectionString := fmt.Sprintf("amqp://is:is@broker:5672/is")
+    connectionString := fmt.Sprintf("amqp://is:is@rabbitMQ:5672/is")
 
     // Create a new AMQP connection
     conn, err := amqp.Dial(connectionString)

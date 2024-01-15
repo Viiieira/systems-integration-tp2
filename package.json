@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@nestjs/common": "^10.3.0",
+    "@prisma/client": "^5.8.0"
+  }
+}

@@ -2,49 +2,60 @@ package main
 
 import (
 	"fmt"
-	"database/sql"
-	_ "github.com/lib/pq"
 	"log"
+
+	"github.com/streadway/amqp"
 )
 
+const (
+	RabbitMQURL = "amqp://is:is@rabbitMQ:5672/is"
+	ImportQueue = "import_queue"
+)
 
-func checkUnmigratedFiles(db *sql.DB) {
-	fmt.Println("Checking for unmigrated files...")
-	rows, err := db.Query("SELECT file_name FROM public.imported_documents WHERE migrated = FALSE AND deleted = FALSE")
-	CheckError(err)
-	defer rows.Close()
-
-	fmt.Println("Unmigrated Files:")
-	for rows.Next() {
-		var fileName string
-		err := rows.Scan(&fileName)
-		CheckError(err)
-		fmt.Printf("\t> %s\n", fileName)
-	}
-
-	err = rows.Err()
-	CheckError(err)
-}
-
-func CheckError(err error) {
+func checkError(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
 func main() {
-	fmt.Println("Connecting to db.... ")
-	connStr := "host=db-xml user=is password=is dbname=is sslmode=disable"
-	db, err := sql.Open("postgres", connStr)
-	CheckError(err)
-	defer db.Close()
+	fmt.Println("Migrator: Listening for import tasks...")
 
-	if err := db.Ping(); err != nil {
-		log.Fatal(err)
+	connection, err := amqp.Dial(RabbitMQURL)
+	checkError(err)
+	defer connection.Close()
+
+	channel, err := connection.Channel()
+	checkError(err)
+	defer channel.Close()
+
+	queue, err := channel.QueueDeclare(
+		ImportQueue,
+		false,
+		false,
+		false,
+		false,
+		nil,
+	)
+	checkError(err)
+
+	messages, err := channel.Consume(
+		queue.Name,
+		"",
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	checkError(err)
+
+	for message := range messages {
+		fmt.Printf("Received import task: %s\n", message.Body)
+
+		taskInfo := string(message.Body)
+
+
+		fmt.Println("Import task processed.")
 	}
-
-	fmt.Println("\nSuccessfully connected to the database!")
-
-	fmt.Println("Hello, World!!")
-	checkUnmigratedFiles(db)
 }
