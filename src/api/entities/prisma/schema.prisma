@@ -1,47 +1,12 @@
 // schema.prisma
 
-model Winery {
-  id          Int       @id @default(autoincrement())
-  name        String
-  id_province String
-  province    Province  @relation(fields: [id_province], references: [id])
-  wines       Wine[]    @relation("WineryWine")
-}
-
-model Taster {
-  id          Int    @id @default(autoincrement())
-  name        String
-  twitter_handle String
-  wines       Wine[] @relation("TasterWine")
-}
-
-model Wine {
-  id          String    @id @default(auto()) @db.Uuid
-  name        String    @unique
-  points      Int
-  price       Float
-  variety     String
-  id_province String    @db.Uuid
-  id_taster   String    @db.Uuid
-  id_winery   String    @db.Uuid
-  province    Province  @relation(fields: [id_province], references: [id])
-  taster      Taster    @relation(fields: [id_taster], references: [id])
-  winery      Winery    @relation(fields: [id_winery], references: [id])
-}
-
-model Province {
-  id          Int       @id @default(autoincrement())
-  name        String
-  coords      Point?
-  id_country  Int
-  Country     Country   @relation(fields: [id_country], references: [id])
-}
-
 model Country {
-  id          Int       @id @default(autoincrement())
-  name        String    @unique
-  provinces   Province[]
+  id          String    @id @default(uuid()) @map("id")
+  name String
+
+  @@map("country") 
 }
+
 
 datasource db {
   provider = "postgresql"
