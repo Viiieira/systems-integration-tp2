@@ -42,7 +42,7 @@ type WineReviews struct {
 	Countries []Country `xml:"Countries>Country"`
 }
 
-func sendMessageToBroker(countryName string) bool {
+func sendMessageToBroker(countryName string, ch *amqp.Channel) bool {
     // Create the connection string
     connectionString := fmt.Sprintf("amqp://is:is@rabbitMQ:5672/is")
 
@@ -53,13 +53,6 @@ func sendMessageToBroker(countryName string) bool {
         return false
     }
     defer conn.Close()
-
-    ch, err := conn.Channel()
-    if err != nil {
-        CheckError(err)
-        return false
-    }
-    defer ch.Close()
 
     q, err := ch.QueueDeclare(
         "import_queue", // Queue name
@@ -94,7 +87,7 @@ func sendMessageToBroker(countryName string) bool {
     return true
 }
 
-func checkUnmigratedFiles(db *sql.DB) {
+func checkUnmigratedFiles(db *sql.DB, ch *amqp.Channel) {
 	fmt.Println("Checking for unmigrated files...")
 	rows, err := db.Query("SELECT file_name, xml FROM public.imported_documents WHERE migrated = FALSE AND deleted = FALSE")
 	CheckError(err)
@@ -116,24 +109,24 @@ func checkUnmigratedFiles(db *sql.DB) {
 			continue
 		}
 
-		// Process the parsed data
-		processWineReviews(wineReviews)
+		// Process the parsed data and send messages to the broker
+		processWineReviews(wineReviews, ch)
 	}
 }
 
-func processWineReviews(wineReviews WineReviews) {
+func processWineReviews(wineReviews WineReviews, ch *amqp.Channel) {
 	for _, country := range wineReviews.Countries {
 		fmt.Printf("Country: %s\n", country.Name)
-		sendMessageToBroker(country.Name)
 
-		for _, province := range country.Provinces {
-			fmt.Printf("\tProvince: %s\n", province.Name)
-			for _, wine := range province.Wines {
-				fmt.Printf("\t\tWine: %s\n", wine.Name)
-			}
+		// Send a message to the broker for each country
+		if success := sendMessageToBroker(country.Name, ch); success {
+			fmt.Printf("Successfully sent message for country: %s\n", country.Name)
+		} else {
+			fmt.Printf("Failed to send message for country: %s\n", country.Name)
 		}
 	}
 }
+
 
 func CheckError(err error) {
 	if err != nil {
@@ -142,25 +135,33 @@ func CheckError(err error) {
 }
 
 func main() {
-	fmt.Println("Connecting to db.... ")
-	connStr := "host=db-xml user=is password=is dbname=is sslmode=disable"
-	db, err := sql.Open("postgres", connStr)
-	CheckError(err)
-	defer db.Close()
+    fmt.Println("Connecting to db.... ")
+    connStr := "host=db-xml user=is password=is dbname=is sslmode=disable"
+    db, err := sql.Open("postgres", connStr)
+    CheckError(err)
+    defer db.Close()
 
-	if err := db.Ping(); err != nil {
-		log.Fatal(err)
-	}
+    if err := db.Ping(); err != nil {
+        log.Fatal(err)
+    }
 
-	fmt.Println("\nSuccessfully connected to the database!")
+    fmt.Println("\nSuccessfully connected to the database!")
 
-	// Check RabbitMQ connection and print success message
-    if success := sendMessageToBroker("exampleCountry"); success {
+    // Create a new AMQP connection
+    conn, err := amqp.Dial("amqp://is:is@rabbitMQ:5672/is")
+    CheckError(err)
+    defer conn.Close()
+
+    ch, err := conn.Channel()
+    CheckError(err)
+    defer ch.Close()
+
+    // Check RabbitMQ connection and print success message
+    if success := sendMessageToBroker("exampleCountry", ch); success {
         fmt.Println("RabbitMQ connection is successful!")
     } else {
         fmt.Println("Failed to send message to RabbitMQ")
     }
 
-
-	checkUnmigratedFiles(db)
+    checkUnmigratedFiles(db, ch)
 }

@@ -53,9 +53,6 @@ func main() {
 	for message := range messages {
 		fmt.Printf("Received import task: %s\n", message.Body)
 
-		taskInfo := string(message.Body)
-
-
 		fmt.Println("Import task processed.")
 	}
 }
