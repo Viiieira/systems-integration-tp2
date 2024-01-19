@@ -22,7 +22,6 @@ model Country {
 model Province {
   id         String   @id @default(uuid()) @map("id")
   name       String
-  coords     Json?
   country    Country @relation(fields: [id_country], references: [id])
   id_country String
 

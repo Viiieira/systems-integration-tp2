@@ -5,22 +5,25 @@ import { PrismaClient } from '@prisma/client';
 export class ProvinceService {
   private prisma = new PrismaClient();
 
-  async create(data: { name: string, latitude: string, longitude: string, countryName: string}): Promise<any> {
-    const { name, latitude, longitude, countryName } = data;
+  async create(data: { name: string, country_name: string}): Promise<any> {
+    const { name, country_name } = data;
+
+    console.log('Received country name:', country_name);
 
     const country = await this.prisma.country.findFirst({
-      where: { name: countryName },
+      where: { name: country_name },
     });
 
+    console.log('Found country:', country);
+
     if (!country) {
-      throw new NotFoundException(`Country with name ${countryName} not found`);
+      throw new NotFoundException(`Country with name ${country_name} not found`);
     }
 
 
     return this.prisma.province.create({
       data: {
         name: data.name,
-        coords: { latitude: parseFloat(latitude), longitude: parseFloat(longitude) },
         country: { connect: { id: country.id } },
       },
     });

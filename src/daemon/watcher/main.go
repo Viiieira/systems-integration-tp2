@@ -19,9 +19,6 @@ type Country struct {
 type Province struct {
 	ID      int    `xml:"id,attr"`
 	Name    string `xml:"name,attr"`
-    CountryRef string `xml:"country_ref,attr"`
-	Latitude  string `xml:"latitude,attr"`
-	Longitude string `xml:"longitude,attr"`
 	Wines    []Wine `xml:"Wines>Wine"`
 }
 
@@ -34,8 +31,6 @@ type Wine struct {
 	ProvinceRef  int    `xml:"province_ref,attr"`
 	TasterRef    int    `xml:"taster_ref,attr"`
 	WineryRef    int    `xml:"winery_ref,attr"`
-	Latitude     string `xml:"latitude,attr"`
-	Longitude    string `xml:"longitude,attr"`
 }
 
 type Taster struct {
@@ -139,8 +134,8 @@ func processWineReviews(wineReviews WineReviews, ch *amqp.Channel) {
 
 		for _, province := range country.Provinces {
             // Send a message to the broker for each province
-			provinceMessage := fmt.Sprintf(" %s, %s, %s, %s, %s",
-				province.Name, country.Name, province.CountryRef, province.Latitude, province.Longitude)
+			provinceMessage := fmt.Sprintf("%s, %s ",
+				province.Name, country.Name)
 
             // Send a message to the broker for each province
             if success := sendMessageToBroker("Province", provinceMessage, ch); success {

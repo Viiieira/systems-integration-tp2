@@ -13,8 +13,7 @@ CREATE TABLE public.Country (
 CREATE TABLE public.Province (
     id          uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     name        varchar(250),
-    latitude    double precision,
-    longitude   double precision,
+    coords      geometry(Point, 4326),
     id_country  uuid NOT NULL,
     
     CONSTRAINT provinces_countries_id_fk

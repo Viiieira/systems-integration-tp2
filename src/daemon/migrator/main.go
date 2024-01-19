@@ -21,9 +21,7 @@ type CountryData struct {
 
 type ProvinceData struct {
     Name    string `json:"name"`
-	CountryRef int `json:"country_ref"`
-	Latitude  string `json:"latitude"`
-	Longitude string `json:"longitude"`
+	CountryName string `json:"country_name"`
 }
 
 type TasterData struct {
@@ -62,6 +60,7 @@ func callAPI(entityName string, message amqp.Delivery) error {
 	case "Province":
 
 		provinceData, err := extractProvinceData(message.Body)
+
 		resp, err := client.R().
 			SetHeader("Content-Type", "application/json").
 			SetBody(provinceData).
@@ -137,45 +136,30 @@ func extractCountryName(body []byte) string {
 func extractProvinceData(body []byte) (ProvinceData, error) {
 	var provinceData ProvinceData
 
+	// Convert the message body to a string
 	messageStr := string(body)
 
-	// Extracting Name
-	nameIndex := strings.Index(messageStr, "Name=")
-	if nameIndex == -1 {
-		return ProvinceData{}, fmt.Errorf("Name not found in message body")
+	// Check if the message starts with "Import Province: "
+	if !strings.HasPrefix(messageStr, "Import Province: ") {
+		return provinceData, fmt.Errorf("Invalid Province message format")
 	}
-	nameEnd := strings.Index(messageStr[nameIndex:], " ")
-	if nameEnd == -1 {
-		return ProvinceData{}, fmt.Errorf("Invalid Name format")
-	}
-	provinceData.Name = messageStr[nameIndex+5 : nameIndex+nameEnd]
 
-	// Extracting Latitude
-	latitudeIndex := strings.Index(messageStr, "Latitude=")
-	if latitudeIndex == -1 {
-		return ProvinceData{}, fmt.Errorf("Latitude not found in message body")
-	}
-	latitudeEnd := strings.Index(messageStr[latitudeIndex:], " ")
-	if latitudeEnd == -1 {
-		return ProvinceData{}, fmt.Errorf("Invalid Latitude format")
-	}
-	provinceData.Latitude = messageStr[latitudeIndex+9 : latitudeIndex+latitudeEnd]
+	// Extract the substring after "Import Province: "
+	provinceInfo := strings.TrimPrefix(messageStr, "Import Province: ")
 
-	// Extracting Longitude
-	longitudeIndex := strings.Index(messageStr, "Longitude=")
-	if longitudeIndex == -1 {
-		return ProvinceData{}, fmt.Errorf("Longitude not found in message body")
+	// Split the provinceInfo into name and country name using ","
+	parts := strings.SplitN(provinceInfo, ",", 2)
+	if len(parts) != 2 {
+		return provinceData, fmt.Errorf("Invalid Province message format")
 	}
-	longitudeEnd := strings.Index(messageStr[longitudeIndex:], " ")
-	if longitudeEnd == -1 {
-		return ProvinceData{}, fmt.Errorf("Invalid Longitude format")
-	}
-	provinceData.Longitude = messageStr[longitudeIndex+10 : longitudeIndex+longitudeEnd]
 
-	// Add similar logic for other attributes
+	// Extract the province name and country name
+	provinceData.Name = strings.TrimSpace(parts[0])
+	provinceData.CountryName = strings.TrimSpace(parts[1])
 
 	return provinceData, nil
 }
+
 
 // Function to extract taster data from the message body
 func extractTasterData(body []byte) (TasterData, error) {

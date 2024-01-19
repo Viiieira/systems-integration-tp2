@@ -7,7 +7,7 @@ export class ProvinceController {
 
 
     @Post()
-    async create(@Body() data: { name: string, latitude: string, longitude: string, countryName: string}) {
+    async create(@Body() data: { name: string, country_name: string}) {
       return this.provinceService.create(data);
     }
   
