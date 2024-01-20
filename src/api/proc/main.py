@@ -98,6 +98,35 @@ def get_wineries_ord_name():
     except Exception as e:
         error_message = f"Error calling 'list_wineries_ord_name': {e}"
         return jsonify({"error": error_message}), 500
+    
+# 8 - Get Average Points of Wines for a Province
+@app.route('/api/province/wine/avg_points')
+def get_avg_points_province():
+    try:
+        if request.is_json:
+            data = request.json
+
+            if "province" not in data:
+                return jsonify({"error": "province parameter is missing in the request JSON"}), 400
+            
+            province = data.get("province")
+        else:
+            return jsonify({"error": "Invalid request format. Expected JSON."}), 400
+ 
+        if not province:
+            return jsonify({"error": "province parameter is missing or empty"}), 400
+            
+        avg_points = server.list_avg_points_wines_province(province)
+        
+        if avg_points is not 0:
+            response_data = {"avg_points": avg_points}
+            return jsonify(response_data)
+        else:
+            return jsonify({"error": f"The province '{province}' was not found"}), 404
+
+    except Exception as e:
+        error_message = f"Error calling 'get_avg_points_province': {e}"
+        return jsonify({"error": error_message}), 500
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=PORT, debug=True)

@@ -95,38 +95,27 @@ def list_wineries_ord_name():
         return []
 
 # print("\t8 - List Average Points of Wines of a Province")
-def list_avg_points_wines_province():
+def list_avg_points_wines_province(province):
+    average_points = 0
     try:
-        country = input("Enter a country (e.g., Italy): ")
-
-        # Construct the XPath query to get wines from the input country and their respective tasters
         query = f"""
-                SELECT 
-                    unnest(xpath('/WineReviews/Countries/Country[@name="{country}"]/Wines/Wine/@name', xml))::text AS wine_name,
-                    unnest(xpath('/WineReviews/Countries/Country[@name="{country}"]/Wines/Wine/@taster_ref', xml))::text AS taster_ref,
-                    xpath('/WineReviews/Tasters/Taster[@id=unnest(xpath('/WineReviews/Countries/Country[@name="{country}"]/Wines/Wine/@taster_ref', xml))::text)]/@taster_name', xml)::text AS taster_name,
-                    xpath('/WineReviews/Tasters/Taster[@id=unnest(xpath('/WineReviews/Countries/Country[@name="{country}"]/Wines/Wine/@taster_ref', xml))::text)]/@taster_twitter_handle', xml)::text AS taster_twitter_handle
+            SELECT AVG(points::numeric) AS average_points
+            FROM (
+                SELECT unnest(xpath('/WineReviews/Countries/Country/Provinces/Province[@name = "{province}"]/Wines/Wine/@points', xml))::text AS points
                 FROM public.imported_documents
-                WHERE xpath('/WineReviews/Countries/Country/@name', xml) = '{country}';
-                """
-
+                WHERE xpath('/WineReviews/Countries/Country/Provinces/Province/@name', xml) IS NOT NULL
+            ) AS subquery;
+            """
+        
         results = execute_query(query)
 
-        if len(results) > 0:
-            # Extracting and printing the wines and their respective tasters
-            for wine_data in results:
-                wine_name = wine_data[0].strip('"')
-                taster_ref = wine_data[1].strip('"')
-                taster_name = wine_data[2].strip('"')
-                taster_twitter_handle = wine_data[3].strip('"')
+        average_points = float(results[0][0]) if results else None
 
-                print(f"> Wine Name: {wine_name}")
-                print(f"  Taster Name: {taster_name}, Taster Twitter Handle: {taster_twitter_handle}")
-        else:
-            print(f"No wines found for the country: {country}")
-
+        return average_points
     except Exception as e:
         print(f"Error executing query: {e}")
+        return average_points
+    
 
 def hello_world():
     return "Hello World"
