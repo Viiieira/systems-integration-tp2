@@ -1,10 +1,8 @@
 // schema.prisma
 
-model Country {
-  id          String    @id @default(uuid()) @map("id")
-  name String
-
-  @@map("country") 
+// Generate Prisma client
+generator client {
+  provider = "prisma-client-js"
 }
 
 
@@ -13,7 +11,27 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Generate Prisma client
-generator client {
-  provider = "prisma-client-js"
+model Country {
+  id          String    @id @default(uuid()) @map("id")
+  name String
+  provinces Province[]
+
+  @@map("country") 
+}
+
+model Province {
+  id         String   @id @default(uuid()) @map("id")
+  name       String
+  country    Country @relation(fields: [id_country], references: [id])
+  id_country String
+
+  @@map("province")
+}
+
+model Taster {
+  id          String    @id @default(uuid()) @map("id")
+  name        String
+  twitter_handle  String
+
+  @@map("taster") 
 }

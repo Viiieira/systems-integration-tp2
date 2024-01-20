@@ -10,6 +10,18 @@ import (
 	"github.com/streadway/amqp"
 )
 
+type Country struct {
+	ID       int       `xml:"id,attr"`
+	Name     string    `xml:"name,attr"`
+	Provinces []Province `xml:"Provinces>Province"`
+}
+
+type Province struct {
+	ID      int    `xml:"id,attr"`
+	Name    string `xml:"name,attr"`
+	Wines    []Wine `xml:"Wines>Wine"`
+}
+
 type Wine struct {
 	ID           int    `xml:"id,attr"`
 	Name         string `xml:"name,attr"`
@@ -19,30 +31,21 @@ type Wine struct {
 	ProvinceRef  int    `xml:"province_ref,attr"`
 	TasterRef    int    `xml:"taster_ref,attr"`
 	WineryRef    int    `xml:"winery_ref,attr"`
-	Latitude     string `xml:"latitude,attr"`
-	Longitude    string `xml:"longitude,attr"`
 }
 
-type Province struct {
-	ID      int    `xml:"id,attr"`
-	Name    string `xml:"name,attr"`
-	CountryRef int `xml:"country_ref,attr"`
-	Latitude  string `xml:"latitude,attr"`
-	Longitude string `xml:"longitude,attr"`
-	Wines    []Wine `xml:"Wines>Wine"`
+type Taster struct {
+    Name     string `xml:"name,attr"`
+	Twitter_handle     string `xml:"twitter_handle,attr"`
 }
 
-type Country struct {
-	ID       int       `xml:"id,attr"`
-	Name     string    `xml:"name,attr"`
-	Provinces []Province `xml:"Provinces>Province"`
-}
+
 
 type WineReviews struct {
 	Countries []Country `xml:"Countries>Country"`
+    Tasters   []Taster  `xml:"Tasters>Taster"`
 }
 
-func sendMessageToBroker(countryName string, ch *amqp.Channel) bool {
+func sendMessageToBroker(entityName string, message string, ch *amqp.Channel) bool { //message
     // Create the connection string
     connectionString := fmt.Sprintf("amqp://is:is@rabbitMQ:5672/is")
 
@@ -74,7 +77,8 @@ func sendMessageToBroker(countryName string, ch *amqp.Channel) bool {
         false,        // Immediate
         amqp.Publishing{
             ContentType: "text/plain",
-            Body:        []byte(fmt.Sprintf("Import country: %s", countryName)),
+            Body:        []byte(fmt.Sprintf("Import %s: %s", entityName, message)),
+
         },
     )
     if err != nil {
@@ -84,6 +88,8 @@ func sendMessageToBroker(countryName string, ch *amqp.Channel) bool {
 
     // Print success message
     fmt.Println("Successfully sent message to RabbitMQ")
+
+    fmt.Printf("Import %s: %s\n", entityName, message)
     return true
 }
 
@@ -116,15 +122,43 @@ func checkUnmigratedFiles(db *sql.DB, ch *amqp.Channel) {
 
 func processWineReviews(wineReviews WineReviews, ch *amqp.Channel) {
 	for _, country := range wineReviews.Countries {
-		fmt.Printf("Country: %s\n", country.Name)
+        countryMessage := fmt.Sprintf("%s", country.Name)
 
 		// Send a message to the broker for each country
-		if success := sendMessageToBroker(country.Name, ch); success {
+		if success := sendMessageToBroker("Country", countryMessage, ch); success {
 			fmt.Printf("Successfully sent message for country: %s\n", country.Name)
+               
 		} else {
 			fmt.Printf("Failed to send message for country: %s\n", country.Name)
 		}
-	}
+
+		for _, province := range country.Provinces {
+            // Send a message to the broker for each province
+			provinceMessage := fmt.Sprintf("%s, %s ",
+				province.Name, country.Name)
+
+            // Send a message to the broker for each province
+            if success := sendMessageToBroker("Province", provinceMessage, ch); success {
+                fmt.Printf("Successfully sent message for province: %s\n", province.Name)
+                
+            } else {
+                fmt.Printf("Failed to send message for province: %s\n", province.Name)
+            }
+        }
+    }
+
+    // Process Tasters
+    for _, taster := range wineReviews.Tasters {
+        tasterMessage := fmt.Sprintf("%s, %s",
+            taster.Name, taster.Twitter_handle)
+
+        // Send a message to the broker for each taster
+        if success := sendMessageToBroker("Taster", tasterMessage, ch); success {
+            fmt.Printf("Successfully sent message for taster: %s\n", taster.Name)
+        } else {
+            fmt.Printf("Failed to send message for taster: %s\n", taster.Name)
+        }
+    }
 }
 
 
@@ -155,13 +189,6 @@ func main() {
     ch, err := conn.Channel()
     CheckError(err)
     defer ch.Close()
-
-    // Check RabbitMQ connection and print success message
-    if success := sendMessageToBroker("exampleCountry", ch); success {
-        fmt.Println("RabbitMQ connection is successful!")
-    } else {
-        fmt.Println("Failed to send message to RabbitMQ")
-    }
 
     checkUnmigratedFiles(db, ch)
 }
