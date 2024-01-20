@@ -2,31 +2,22 @@ from functions.execute_query import execute_query
 
 # print("\t4 - List All Wines belonging to a country")
 def list_wines_country(country):
+    wines = []
     try:
-        # country = input("Enter a country (e.g., Spain): ")
-
-        query = f"SELECT xpath('/WineReviews/Countries/Country[@name=\"{country}\"]/Wines/Wine/@name', xml) AS wine_names FROM public.imported_documents;"
+        query = f"""
+                SELECT
+                    unnest(xpath('/WineReviews/Countries/Country[@name="{country}"]/Provinces/Province/Wines/Wine/@name', xml))::text AS wine_name
+                FROM public.imported_documents;
+                """
 
         results = execute_query(query)
 
-        if len(results) > 0:
-            # Extracting the wine names from the result
-            wines_str = results[0][0]
-
-            # Handling the case when there are multiple wine names
-            if wines_str:
-                wines_list = wines_str.split(',')
-
-                # Iterating over the list and printing each wine name
-                for wine in wines_list:
-                    print(f"> {wine.strip()}")
-            else:
-                print(f"There are no wines for the country: {country}")
-        else:
-            print(f"There are no wines for the country: {country}")
-
+        for wine in results:
+            wines.append(wine)
+        return wines
     except Exception as e:
         print(f"Error executing query: {e}")
+        return wines
 
 # print("\t5 - List All Wines that match an input amount of points")
 def list_wines_amoint_points(operator, points):
@@ -73,7 +64,6 @@ def list_wineries_per_province():
         wineries_per_province = []
         # Extracting and returning the wineries grouped by province
         for winery_data in results:
-            print(f"Winery Data: {winery_data}")
             province = winery_data[0].strip('"') if winery_data[0] is not None else ""
             winery = winery_data[1].strip('"')
 
