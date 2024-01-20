@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"log"
+    "time" 
 
 	_ "github.com/lib/pq"
 	"github.com/streadway/amqp"
@@ -121,6 +122,19 @@ func checkUnmigratedFiles(db *sql.DB, ch *amqp.Channel) {
 
 		// Process the parsed data and send messages to the broker
 		processWineReviews(wineReviews, ch)
+
+        // Mark the file as migrated
+		markFileAsMigrated(db, fileName)
+	}
+}
+
+// Function to mark a file as migrated
+func markFileAsMigrated(db *sql.DB, fileName string) {
+	_, err := db.Exec("UPDATE public.imported_documents SET migrated = TRUE WHERE file_name = $1", fileName)
+	if err != nil {
+		fmt.Printf("Error updating migration status for file %s: %v\n", fileName, err)
+	} else {
+		fmt.Printf("File %s marked as migrated.\n", fileName)
 	}
 }
 
@@ -221,6 +235,8 @@ func CheckError(err error) {
 }
 
 func main() {
+    var isMigrating bool
+
     fmt.Println("Connecting to db.... ")
     connStr := "host=db-xml user=is password=is dbname=is sslmode=disable"
     db, err := sql.Open("postgres", connStr)
@@ -242,5 +258,27 @@ func main() {
     CheckError(err)
     defer ch.Close()
 
-    checkUnmigratedFiles(db, ch)
+    for {
+        // Check if a file is currently being migrated
+        if isMigrating {
+            fmt.Println("Waiting for the current file processing to complete...")
+            time.Sleep(5 * time.Second)
+            continue
+        }
+
+        // Print a message indicating that the program is actively listening
+        fmt.Println("Listening for new files to migrate...")
+
+        // Set the migrating flag to true
+        isMigrating = true
+
+        // Check for new unmigrated files
+        checkUnmigratedFiles(db, ch)
+
+        // Set the migrating flag to false
+        isMigrating = false
+
+        // Sleep for some time before checking again
+        time.Sleep(30 * time.Second)
+    }
 }
