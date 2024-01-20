@@ -8,18 +8,13 @@ export class ProvinceService {
   async create(data: { name: string, country_name: string}): Promise<any> {
     const { name, country_name } = data;
 
-    console.log('Received country name:', country_name);
-
     const country = await this.prisma.country.findFirst({
       where: { name: country_name },
     });
 
-    console.log('Found country:', country);
-
     if (!country) {
       throw new NotFoundException(`Country with name ${country_name} not found`);
     }
-
 
     return this.prisma.province.create({
       data: {

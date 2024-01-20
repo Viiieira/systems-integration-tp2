@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"strconv"
 	"gopkg.in/resty.v1"
 
 	"github.com/streadway/amqp"
@@ -24,9 +25,23 @@ type ProvinceData struct {
 	CountryName string `json:"country_name"`
 }
 
+type WineData struct {
+    Name    string `json:"name"`
+	Points  int   `json:"points"`
+	Price    string `json:"price"`
+	Variety    string `json:"variety"`
+	ProvinceName string `json:"province_name"`
+	TasterName string `json:"taster_name"`
+	WineryName string `json:"winery_name"`
+}
+
 type TasterData struct {
     Name    string `json:"name"`
 	Twitter_handle    string `json:"twitter_handle"`
+}
+
+type WineryData struct {
+    Name    string `json:"name"`
 }
 
 func checkError(err error) {
@@ -73,12 +88,49 @@ func callAPI(entityName string, message amqp.Delivery) error {
 		if resp.StatusCode() != 201 {
 			return fmt.Errorf("API request failed with status code: %d", resp.StatusCode())
 		}
+
+	case "Wine":
+
+		wineData, err := extractWineData(message.Body)
+
+		resp, err := client.R().
+			SetHeader("Content-Type", "application/json").
+			SetBody(wineData).
+			Post(apiEndpoint)
+
+		if err != nil {
+			return err
+		}
+
+		if resp.StatusCode() != 201 {
+			log.Printf("API request failed. Status code: %d, Response body: %s", resp.StatusCode(), resp.Body())
+			return fmt.Errorf("API request failed with status code: %d", resp.StatusCode())
+		}
+
 	case "Taster":
 
 		tasterData, err := extractTasterData(message.Body)
 		resp, err := client.R().
 			SetHeader("Content-Type", "application/json").
 			SetBody(tasterData).
+			Post(apiEndpoint)
+
+		if err != nil {
+			return err
+		}
+
+		if resp.StatusCode() != 201 {
+			return fmt.Errorf("API request failed with status code: %d", resp.StatusCode())
+		}
+
+	case "Winery":
+
+		wineryData, err := extractWineryData(message.Body)
+		fmt.Println("Extracted Winery Name:", wineryData.Name)
+
+		resp, err := client.R().
+			SetHeader("Content-Type", "application/json").
+			SetBody(wineryData).
 			Post(apiEndpoint)
 
 		if err != nil {
@@ -160,6 +212,39 @@ func extractProvinceData(body []byte) (ProvinceData, error) {
 	return provinceData, nil
 }
 
+// Function to extract wine data from the message body
+func extractWineData(body []byte) (WineData, error) {
+	var wineData WineData
+
+	// Convert the message body to a string
+	messageStr := string(body)
+
+	// Check if the message starts with "Import Wine: "
+	if !strings.HasPrefix(messageStr, "Import Wine: ") {
+		return wineData, fmt.Errorf("Invalid Wine message format")
+	}
+
+	// Extract the substring after "Import Wine: "
+	wineInfo := strings.TrimPrefix(messageStr, "Import Wine: ")
+
+	// Split the wineInfo into individual attributes using ","
+	parts := strings.SplitN(wineInfo, ",", 7)
+	if len(parts) != 7 {
+		return wineData, fmt.Errorf("Invalid Wine message format")
+	}
+
+	// Extract the wine data attributes
+	wineData.Name = strings.TrimSpace(parts[0])
+	wineData.Points, _ = strconv.Atoi(strings.TrimSpace(parts[1]))
+	wineData.Price = strings.TrimSpace(parts[2])
+	wineData.Variety = strings.TrimSpace(parts[3])
+	wineData.ProvinceName = strings.TrimSpace(parts[4])
+	wineData.TasterName = strings.TrimSpace(parts[5])
+	wineData.WineryName = strings.TrimSpace(parts[6])
+
+	return wineData, nil
+}
+
 
 // Function to extract taster data from the message body
 func extractTasterData(body []byte) (TasterData, error) {
@@ -189,6 +274,29 @@ func extractTasterData(body []byte) (TasterData, error) {
 
 	return tasterData, nil
 }
+
+// Function to extract winery data from the message body
+func extractWineryData(body []byte) (WineryData, error) {
+	var wineryData WineryData
+
+	// Convert the message body to a string
+	messageStr := string(body)
+
+	// Check if the message starts with "Import Winery: "
+	if !strings.HasPrefix(messageStr, "Import Winery: ") {
+		return wineryData, fmt.Errorf("Invalid Winery message format")
+	}
+
+	// Extract the substring after "Import Winery: "
+	wineryName := strings.TrimPrefix(messageStr, "Import Winery: ")
+
+	// Set the winery name in the WineryData struct
+	wineryData.Name = strings.TrimSpace(wineryName)
+
+	return wineryData, nil
+}
+
+
 
 func main() {
 

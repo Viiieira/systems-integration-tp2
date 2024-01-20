@@ -5,7 +5,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -14,8 +13,8 @@ datasource db {
 model Country {
   id          String    @id @default(uuid()) @map("id")
   name String
-  provinces Province[]
 
+  provinces Province[]
   @@map("country") 
 }
 
@@ -25,7 +24,24 @@ model Province {
   country    Country @relation(fields: [id_country], references: [id])
   id_country String
 
+  wines Wine[]
   @@map("province")
+}
+
+model Wine {
+  id         String   @id @default(uuid()) @map("id")
+  name       String
+  points     Int
+  price      Float
+  variety    String
+  province   Province @relation(fields: [id_province], references: [id])
+  id_province String
+  taster     Taster @relation(fields: [id_taster], references: [id])
+  id_taster  String
+  winery     Winery @relation(fields: [id_winery], references: [id])
+  id_winery  String
+
+  @@map("wine")
 }
 
 model Taster {
@@ -33,5 +49,15 @@ model Taster {
   name        String
   twitter_handle  String
 
+  wines Wine[]
   @@map("taster") 
 }
+
+model Winery {
+  id          String    @id @default(uuid()) @map("id")
+  name        String
+
+  wines Wine[]
+  @@map("winery") 
+}
+
