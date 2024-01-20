@@ -61,36 +61,32 @@ def list_wineries_per_province():
     try:
         # Construct the XPath query to get all wineries grouped by province
         query = """
-                SELECT 
-                    unnest(xpath('/WineReviews/Wineries/Winery/@winery', xml))::text AS winery_name,
-                    unnest(xpath('/WineReviews/Wineries/Winery/@province', xml))::text AS province
+                SELECT
+                    unnest(xpath('/WineReviews/Countries/Country/Provinces/Province[@id=//WineReviews/Wineries/Winery/@province_ref]/@name', xml))::text AS province_name,
+                    unnest(xpath('/WineReviews/Wineries/Winery/@name', xml))::text AS winery_name
                 FROM public.imported_documents
-                ORDER BY province, winery_name;
+                ORDER BY province_name, winery_name;
                 """
 
         results = execute_query(query)
 
-        if len(results) > 0:
-            # Extracting and printing the wineries grouped by province
-            current_province = None
-            for winery_data in results:
-                winery_name = winery_data[0].strip('"')
-                province = winery_data[1].strip('"')
+        wineries_per_province = []
+        # Extracting and returning the wineries grouped by province
+        for winery_data in results:
+            print(f"Winery Data: {winery_data}")
+            province = winery_data[0].strip('"') if winery_data[0] is not None else ""
+            winery = winery_data[1].strip('"')
 
-                # Print province header when it changes
-                if province != current_province:
-                    print(f"Province: {province}")
-                    current_province = province
+            # Add winery to the list with its associated province
+            wineries_per_province.append({"province": province, "winery": winery})
 
-                print(f"> Winery Name: {winery_name}")
-        else:
-            print("No wineries found.")
+        return wineries_per_province
 
     except Exception as e:
         print(f"Error executing query: {e}")
+        return []
 
 # print("\t7 - List Wineries ordered by Name ")
-# TODO: WIP, query doesnt return anything
 def list_wineries_ord_name():
     try:
         # Construct the XPath query to get all wineries ordered by name
@@ -102,10 +98,8 @@ def list_wineries_ord_name():
                 """
 
         results = execute_query(query)
-        print(f"Results: {results}")
 
         wineries = []
-
         if len(results) > 0:
             # Extracting and printing the wineries ordered by name
             for winery_data in results:
