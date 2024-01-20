@@ -35,7 +35,7 @@ if __name__ == "__main__":
         server.register_function(list_wines_country)
 
         print("Registering list_wines_amoint_points function...")
-        server.register_function(list_wines_amoint_points)
+        server.register_function(list_wines_amount_points)
 
         print("Registering list_wineries_per_province function...")
         server.register_function(list_wineries_per_province)

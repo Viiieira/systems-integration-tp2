@@ -20,33 +20,23 @@ def list_wines_country(country):
         return wines
 
 # print("\t5 - List All Wines that match an input amount of points")
-def list_wines_amoint_points(operator, points):
-    query = f"SELECT xpath('/WineReviews/Countries/Country[Wines/Wine[@points {operator} {points}]]/Wines/Wine/@name', xml)::text AS wine_name " \
-            f"FROM public.imported_documents;"
-
+def list_wines_amount_points(operator, points):
+    wines = []
     try:
+        query = f"""
+                SELECT unnest(xpath('/WineReviews/Countries/Country/Provinces/Province/Wines/Wine[@points {operator} {points}]/@name', xml))::text AS wine_name
+                FROM public.imported_documents;
+                """
+
         results = execute_query(query)
 
-        if len(results) > 0:
-            # Extracting the wines names from the result
-            names_str = results[0][0]
-
-            # Removing curly braces and quotes
-            names_string = names_str.replace('{', '').replace('}', '').replace('"', '')
-
-            # Splitting the string into a list of countries
-            names_list = names_string.split(',')
-
-            # Iterating over the list and printing each country
-            for name in names_list:
-                print(f"> {name.strip()}")
-        else:
-            print("No wines match the criteria.")
-
+        for wine in results:
+            wines.append(wine)
+        return wines
     except Exception as e:
         print(f"Error executing query: {e}")
-    pass
-
+        return wines
+    
 # print("\t6 - List Wineries grouped by Province")
 def list_wineries_per_province():
     try:

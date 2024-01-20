@@ -11,8 +11,7 @@ CORS(app)
 server = xmlrpc.client.ServerProxy('http://rpc-server:9000')
 
 # 4 - List All Wines belonging to a country
-# TODO - 
-@app.route('/api/wines/country')
+@app.route('/api/wine/country')
 def get_wines_country():
     try:
         if request.is_json:
@@ -40,9 +39,43 @@ def get_wines_country():
         error_message = f"Error calling 'api_list_wines_country': {e}"
         return jsonify({"error": error_message}), 500
 
+# 5 - List All Wines that match an input amount of points
+@app.route('/api/wine/getByPoints')
+def get_wines_amount_points():
+    try:
+        if request.is_json:
+            data = request.json
+
+            if "operator" not in data:
+                return jsonify({"error": "operator parameter is missing in the request JSON"}), 400
+            if "points" not in data:
+                return jsonify({"error": "points parameter is missing in the request JSON"}), 400
+                
+            operator = data.get("operator")
+            points = data.get("points")
+        else:
+            return jsonify({"error": "Invalid request format. Expected JSON."}), 400
+
+        if not operator:
+            return jsonify({"error": "operator parameter is missing or empty"}), 400
+        if not points:
+            return jsonify({"error": "points parameter is missing or empty"}), 400
+            
+        wines = server.list_wines_amount_points(operator, points)
+        
+        if wines is not None:
+            response_data = {"wines": wines}
+            return jsonify(response_data)
+        else:
+            return jsonify({"error": f"No wines were found."}), 404
+
+    except Exception as e:
+        error_message = f"Error calling 'get_wines_amount_points': {e}"
+        return jsonify({"error": error_message}), 500
+        
 
 # 6 - Get Wineries Grouped by Province
-@app.route('/api/province/groupedByWinery')
+@app.route('/api/winery/province')
 def get_wineries_per_province():
     try:
         provinces = server.list_wineries_per_province()
@@ -54,7 +87,7 @@ def get_wineries_per_province():
         return jsonify({"error": error_message}), 500
 
 # 7 - Get Wineries Ordered By Name
-@app.route('/api/winery/getByName', methods=['GET'])
+@app.route('/api/winery', methods=['GET'])
 def get_wineries_ord_name():
     try:
         wineries = server.list_wineries_ord_name()
