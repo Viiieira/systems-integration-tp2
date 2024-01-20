@@ -24,12 +24,7 @@ CREATE TABLE public.Province (
 -- Winery
 CREATE TABLE public.Winery (
     id          uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name        varchar(250) UNIQUE NOT NULL,
-    id_province uuid NOT NULL,
-
-    CONSTRAINT wineries_provinces_id_fk
-        FOREIGN KEY (id_province) REFERENCES public.Province(id)
-        ON DELETE CASCADE
+    name        varchar(250) UNIQUE NOT NULL
 );
 
 -- Taster

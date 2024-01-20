@@ -28,21 +28,25 @@ type Wine struct {
 	Points       int    `xml:"points,attr"`
 	Price        string `xml:"price,attr"`
 	Variety      string `xml:"variety,attr"`
-	ProvinceRef  int    `xml:"province_ref,attr"`
-	TasterRef    int    `xml:"taster_ref,attr"`
+    TasterRef    int    `xml:"taster_ref,attr"`
 	WineryRef    int    `xml:"winery_ref,attr"`
 }
 
+type Winery struct {
+	ID   int    `xml:"id,attr"`
+	Name string `xml:"name,attr"`
+}
+
 type Taster struct {
+    ID              int    `xml:"id,attr"`
     Name     string `xml:"name,attr"`
 	Twitter_handle     string `xml:"twitter_handle,attr"`
 }
 
-
-
 type WineReviews struct {
 	Countries []Country `xml:"Countries>Country"`
     Tasters   []Taster  `xml:"Tasters>Taster"`
+    Wineries  []Winery  `xml:"Wineries>Winery"`
 }
 
 func sendMessageToBroker(entityName string, message string, ch *amqp.Channel) bool { //message
@@ -121,6 +125,32 @@ func checkUnmigratedFiles(db *sql.DB, ch *amqp.Channel) {
 }
 
 func processWineReviews(wineReviews WineReviews, ch *amqp.Channel) {
+
+    // Process Tasters
+    for _, taster := range wineReviews.Tasters {
+        tasterMessage := fmt.Sprintf("%s, %s",
+            taster.Name, taster.Twitter_handle)
+
+        // Send a message to the broker for each taster
+        if success := sendMessageToBroker("Taster", tasterMessage, ch); success {
+            fmt.Printf("Successfully sent message for taster: %s\n", taster.Name)
+        } else {
+            fmt.Printf("Failed to send message for taster: %s\n", taster.Name)
+        }
+    }
+
+    for _, winery := range wineReviews.Wineries {
+        // Send a message to the broker for each winery
+        wineryMessage := fmt.Sprintf("%s",
+            winery.Name)
+
+        if success := sendMessageToBroker("Winery", wineryMessage, ch); success {
+            fmt.Printf("Successfully sent message for winery: %s\n", winery.Name)
+        } else {
+            fmt.Printf("Failed to send message for winery: %s\n", winery.Name)
+        }
+    }
+
 	for _, country := range wineReviews.Countries {
         countryMessage := fmt.Sprintf("%s", country.Name)
 
@@ -144,23 +174,45 @@ func processWineReviews(wineReviews WineReviews, ch *amqp.Channel) {
             } else {
                 fmt.Printf("Failed to send message for province: %s\n", province.Name)
             }
+
+            for _, wine := range province.Wines {
+                // Send a message to the broker for each province
+                wineMessage := fmt.Sprintf("%s, %d, %s, %s, %s, %s, %s",
+                    wine.Name, wine.Points, wine.Price, wine.Variety, province.Name, getTasterName(wine.TasterRef, wineReviews), getWineryName(wine.WineryRef, wineReviews))
+
+                // Send a message to the broker for each province
+                if success := sendMessageToBroker("Wine", wineMessage, ch); success {
+                    fmt.Printf("Successfully sent message for wine: %s\n", wine.Name)
+                    
+                } else {
+                    fmt.Printf("Failed to send message for wine: %s\n", wine.Name)
+                }
+            }
         }
     }
 
-    // Process Tasters
-    for _, taster := range wineReviews.Tasters {
-        tasterMessage := fmt.Sprintf("%s, %s",
-            taster.Name, taster.Twitter_handle)
-
-        // Send a message to the broker for each taster
-        if success := sendMessageToBroker("Taster", tasterMessage, ch); success {
-            fmt.Printf("Successfully sent message for taster: %s\n", taster.Name)
-        } else {
-            fmt.Printf("Failed to send message for taster: %s\n", taster.Name)
-        }
-    }
+    
 }
 
+// Function to get winery name based on winery reference
+func getWineryName(wineryRef int, wineReviews WineReviews) string {
+    for _, winery := range wineReviews.Wineries {
+        if winery.ID == wineryRef {
+            return winery.Name
+        }
+    }
+    return "Unknown Winery"
+}
+
+// Function to get taster name based on taster reference
+func getTasterName(tasterRef int, wineReviews WineReviews) string {
+    for _, taster := range wineReviews.Tasters {
+        if taster.ID == tasterRef {
+            return taster.Name
+        }
+    }
+    return "Unknown Taster"
+}
 
 func CheckError(err error) {
 	if err != nil {
