@@ -20,4 +20,15 @@ export class ProvinceController {
     async findAll() {
       return this.provinceService.findAll();
     }
+
+    @Put(':id')
+    async update(@Param('id') id: string, @Body() data: { name: string, country_name: string }) {
+      return this.provinceService.update(id, data);
+    }
+
+    @Delete(':id')
+    async delete(@Param('id') id: string) {
+      await this.provinceService.delete(id);
+      return { message: 'Province deleted successfully' };
+    }
 }

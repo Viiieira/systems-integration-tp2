@@ -20,4 +20,14 @@ export class WineController {
     async findAll() {
       return this.wineService.findAll();
     }
+
+    @Put(':id')
+    async update(@Param('id') id: string, @Body() data: { name?: string, points?: number, price?: string, variety?: string }) {
+      return this.wineService.update(id, data);
+    }
+
+    @Delete(':id')
+    async delete(@Param('id') id: string) {
+      return this.wineService.delete(id);
+    }
 }

@@ -29,4 +29,27 @@ export class CountryService {
   async findAll(): Promise<any[]> {
     return this.prisma.country.findMany();
   }
+
+  async update(id: string, data: { name: string }): Promise<any> {
+    const updatedCountry = await this.prisma.country.update({
+      where: { id },
+      data,
+    });
+
+    if (!updatedCountry) {
+      throw new NotFoundException(`Country with id ${id} not found`);
+    }
+
+    return updatedCountry;
+  }
+
+  async delete(id: string): Promise<void> {
+    const deletedCountry = await this.prisma.country.delete({
+      where: { id },
+    });
+
+    if (!deletedCountry) {
+      throw new NotFoundException(`Country with id ${id} not found`);
+    }
+  }
 }

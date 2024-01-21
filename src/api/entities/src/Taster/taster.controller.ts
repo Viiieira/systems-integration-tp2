@@ -19,4 +19,15 @@ export class TasterController {
   async findAll() {
     return this.tasterService.findAll();
   }
+  
+  @Put(':id')
+  async update(@Param('id') id: string, @Body() data: { name: string, twitter_handle: string }) {
+    return this.tasterService.update(id, data);
+  }
+
+  @Delete(':id')
+  async delete(@Param('id') id: string) {
+    await this.tasterService.delete(id);
+    return { message: 'Taster deleted successfully' };
+  }
 }

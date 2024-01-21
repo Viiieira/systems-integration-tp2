@@ -29,4 +29,33 @@ export class WineryService {
   async findAll(): Promise<any[]> {
     return this.prisma.winery.findMany();
   }
+
+  async update(id: string, data: { name: string }): Promise<any> {
+    const existingWinery = await this.prisma.winery.findUnique({
+      where: { id },
+    });
+
+    if (!existingWinery) {
+      throw new NotFoundException(`Winery with id ${id} not found`);
+    }
+
+    return this.prisma.winery.update({
+      where: { id },
+      data,
+    });
+  }
+
+  async delete(id: string): Promise<void> {
+    const existingWinery = await this.prisma.winery.findUnique({
+      where: { id },
+    });
+
+    if (!existingWinery) {
+      throw new NotFoundException(`Winery with id ${id} not found`);
+    }
+
+    await this.prisma.winery.delete({
+      where: { id },
+    });
+  }
 }

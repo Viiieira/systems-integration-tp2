@@ -20,4 +20,14 @@ export class WineryController {
     async findAll() {
       return this.wineryService.findAll();
     }
+
+    @Put(':id')
+    async update(@Param('id') id: string, @Body() data: { name: string }) {
+      return this.wineryService.update(id, data);
+    }
+
+    @Delete(':id')
+    async delete(@Param('id') id: string) {
+      await this.wineryService.delete(id);
+    }
 }
