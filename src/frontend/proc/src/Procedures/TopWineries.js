@@ -3,15 +3,10 @@ import {
   Box,
   CircularProgress,
   Container,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
 } from "@mui/material";
 
 function TopWineries() {
   const [procData, setProcData] = useState(null);
-  const [selectedCountry, setSelectedCountry] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,7 +16,7 @@ function TopWineries() {
   const fetchData = () => {
     setLoading(true); // Set loading to true when fetching starts
 
-    // Reset procData when selectedCountry changes
+    // Reset procData
     setProcData(null);
 
     // Simulate fetching data from the specified endpoint
@@ -55,10 +50,8 @@ function TopWineries() {
               <li key={index}>{winery}</li>
             ))}
           </ul>
-        ) : selectedCountry ? (
-          <div>No data available</div>
         ) : (
-          "--"
+          <div>No data available</div>
         )}
       </Container>
     </>
