@@ -187,7 +187,7 @@ func markFileAsMigrated(db *sql.DB, fileName string) {
 }
 
 func processWineReviews(wineReviews WineReviews, ch *amqp.Channel) {
-/*
+
     // Process Tasters
     for _, taster := range wineReviews.Tasters {
         tasterMessage := fmt.Sprintf("%s, %s",
@@ -211,10 +211,10 @@ func processWineReviews(wineReviews WineReviews, ch *amqp.Channel) {
         } else {
             fmt.Printf("Failed to send message for winery: %s\n", winery.Name)
         }
-    }*/
+    }
 
 	for _, country := range wineReviews.Countries {
-       /* countryMessage := fmt.Sprintf("%s", country.Name)
+       countryMessage := fmt.Sprintf("%s", country.Name)
 
 		// Send a message to the broker for each country
 		if success := sendMessageToBroker("Country", countryMessage, ch); success {
@@ -222,11 +222,11 @@ func processWineReviews(wineReviews WineReviews, ch *amqp.Channel) {
                
 		} else {
 			fmt.Printf("Failed to send message for country: %s\n", country.Name)
-		}*/
+		}
 
 		for _, province := range country.Provinces {
             // Send a message to the broker for each province
-			/*provinceMessage := fmt.Sprintf("%s, %s ",
+			provinceMessage := fmt.Sprintf("%s, %s ",
 				province.Name, country.Name)
 
             // Send a message to the broker for each province
@@ -236,14 +236,14 @@ func processWineReviews(wineReviews WineReviews, ch *amqp.Channel) {
             } else {
                 fmt.Printf("Failed to send message for province: %s\n", province.Name)
             }
-*/
+
             // Send a message to the new queue for each province
             if success := sendProvinceUpdateMessageToBroker(province.Name, ch); success {
                 fmt.Printf("Successfully sent province update message for province: %s\n", province.Name)
             } else {
                 fmt.Printf("Failed to send province update message for province: %s\n", province.Name)
             }
-/*
+
             for _, wine := range province.Wines {
                 // Send a message to the broker for each province
                 wineMessage := fmt.Sprintf("%s, %d, %s, %s, %s, %s, %s",
@@ -256,7 +256,7 @@ func processWineReviews(wineReviews WineReviews, ch *amqp.Channel) {
                 } else {
                     fmt.Printf("Failed to send message for wine: %s\n", wine.Name)
                 }
-            }*/
+            }
         }
     }
     
