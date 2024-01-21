@@ -1,23 +1,39 @@
-import Players from "../Tables/Players";
+import Countries from "../Tables/Countries";
+import Provinces from "../Tables/Provinces";
+import Wines from "../Tables/Wines";
+import Wineries from "../Tables/Wineries";
+import Tasters from "../Tables/Tasters";
 
 const Sections = [
 
     {
-        id: "players",
-        label: "Players",
-        content: <Players/>
-    },
-
-    {
-        id: "teams",
-        label: "Teams",
-        content: <h1>Teams - Work in progresss</h1>
-    },
-
-    {
         id: "countries",
         label: "Countries",
-        content: <h1>Countries - Work in progress</h1>
+        content: <Countries/>
+    },
+
+    {
+        id: "provinces",
+        label: "Provinces",
+        content: <Provinces/>
+    },
+
+    {
+        id: "wines",
+        label: "Wines",
+        content: <Wines/>
+    },
+
+    {
+        id: "wineries",
+        label: "Wineries",
+        content: <Wineries/>
+    },
+
+    {
+        id: "tasters",
+        label: "Tasters",
+        content: <Tasters/>
     }
 
 ];
