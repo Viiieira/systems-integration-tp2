@@ -31,52 +31,91 @@ def execute_query(query, params=None, fetchall=True):
         connection.close()
 
 
-@app.route('/api/markers', methods=['GET'])
-def get_markers():
-    args = request.args
+@app.route('/get_provinces', methods=['GET'])
+def get_provinces():
+    try:
+        limit = int(request.args.get('limit', 70))
 
-    # Query to retrieve markers for wines with provinces inside the specified box
-    query = """
-        SELECT
-            jsonb_build_object(
-                'type', 'feature',
-                'geometry', jsonb_build_object(
-                    'type', 'Point',
-            "       'geometry', st_asgeojson(coords)::jsonb,"
-            "       'properties', to_jsonb(marker_data.*) - 'geom'"
-                ),
-                'properties', jsonb_build_object(
-                    'id', wine.id,
-                    'name', wine.name,
-                    'points', wine.points,
-                    'price', wine.price,
-                    'winery', wine.winery,
-                )
-            ) AS marker
-        FROM (
-            SELECT
-                w.id,
-                w.name,
-                w.country,
-                w.position,
-                w.imgUrl,
-                w.number,
-                ST_X(p.coords) AS province_coords[0],
-                ST_Y(p.coords) AS province_coords[1]
-            FROM wine w
-            INNER JOIN province p ON w.id_province = p.id
-            WHERE ST_Within(p.coords, ST_MakeEnvelope(%s, %s, %s, %s, 4326))
-        ) AS wine
-    """
+        # Use execute_query to fetch provinces
+        query = f"SELECT * FROM provinces LIMIT %s"
+        provinces = execute_query(query, (limit,), fetchall=True)
 
-    # Execute the query with the bounding box parameters
-    markers = execute_query(
-        query,
-        [args['neLng'], args['neLat'], args['swLng'], args['swLat']],
-        fetchall=True
-    )
+        if provinces is None:
+            # Handle the case where data retrieval was unsuccessful
+            return jsonify({"error": "Failed to retrieve provinces data"}), 500
 
-    return jsonify(markers), 200
+        result = []
+        for province in provinces:
+            result.append({
+                "id": province.get('id'),
+                "name": province.get('name'),
+                "coordinates": province.get('coords')
+                # Add other province attributes as needed
+            })
+
+        return jsonify(result), 200
+
+    except Exception as e:
+        # Handle other exceptions
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/update_province_coords', methods=['PATCH'])
+def update_province_coords():
+    try:
+        data = request.json
+        province_name = data.get('province_name')
+        latitude = data.get('latitude')
+        longitude = data.get('longitude')
+
+        if not province_name or not latitude or not longitude:
+            return jsonify({"error": "Missing required data"}), 400
+
+        update_query = f"UPDATE provinces SET coords = ST_SetSRID(ST_MakePoint({longitude}, {latitude}), 4326) WHERE name = '{province_name}'"
+        execute_query(update_query)
+
+        return jsonify({"message": "Coordinates updated successfully"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@app.route('/get_plain_coordinates', methods=['GET'])
+def get_plain_coordinates():
+    try:
+        # Use request.args to get the 'country_id' query parameter
+        country_id = request.args.get('id')
+
+        # Check if 'country_id' is provided
+        if not country_id:
+            return jsonify({"error": "Missing 'id' parameter"}), 400
+
+        # Use parameterized query to avoid SQL injection
+        query = "SELECT ST_AsText(coords) FROM provinces WHERE id = %s"
+
+        try:
+            # Execute execute_query with the query and parameters
+            result = execute_query(query, (country_id,), fetchall=False)
+
+            # Check if result is not None
+            if result:
+                # Extract coordinates from the result
+                text_coordinates = result.get('st_astext') if result else 'N/A'
+                if text_coordinates != 'N/A':
+                    # Extracting latitude and longitude from the "POINT(lon lat)" format
+                    lon_lat_str = text_coordinates.replace('POINT(', '').replace(')', '')
+                    lon, lat = map(float, lon_lat_str.split())
+                    return jsonify({"longitude": lon, "latitude": lat}), 200
+                else:
+                    return jsonify({"error": "Coordinates not found for the given id"}), 404
+            else:
+                return jsonify({"error": f"No result found for id {id}"}), 404
+        except Exception as e:
+            # Handle exceptions related to database operations
+            return jsonify({"error": f"Database error: {str(e)}"}), 500
+
+    except Exception as e:
+        # Handle other exceptions
+        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=PORT)

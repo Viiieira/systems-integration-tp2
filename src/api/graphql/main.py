@@ -5,8 +5,10 @@ import uuid
 from flask import Flask, request, jsonify
 import magql
 from flask_magql import MagqlExtension
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 app.config["DEBUG"] = True
 
 DATABASE_URL = "postgresql://is:is@db-rel:5432/is"
