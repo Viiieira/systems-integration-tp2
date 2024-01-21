@@ -12,7 +12,7 @@ const LIST_PROPERTIES = [
     {"key": "overall", label: "Overall", Icon: PictureInPictureAltIcon}
 ];
 
-export function ProvinceMarker({geoJSON}) {
+export function ObjectMarker({geoJSON}) {
     const properties = geoJSON?.properties;
     const {id, imgUrl, name} = properties;
     const coordinates = geoJSON?.geometry?.coordinates;

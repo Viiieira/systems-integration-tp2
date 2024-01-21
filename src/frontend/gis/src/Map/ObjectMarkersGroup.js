@@ -3,7 +3,7 @@ import { LayerGroup, useMap } from 'react-leaflet';
 import { ObjectMarker } from './ObjectMarker';
 import api from '../api';
 
-function ProvinceMarkersGroup() {
+function ObjectMarkersGroup() {
   const map = useMap();
   const [provinces, setProvinces] = useState([]);
   const axios = api();
@@ -56,4 +56,4 @@ function ProvinceMarkersGroup() {
   );
 }
 
-export default ProvinceMarkersGroup;
+export default ObjectMarkersGroup;
