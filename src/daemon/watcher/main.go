@@ -50,6 +50,54 @@ type WineReviews struct {
     Wineries  []Winery  `xml:"Wineries>Winery"`
 }
 
+func sendProvinceUpdateMessageToBroker(provinceName string, ch *amqp.Channel) bool {
+    // Create the connection string
+    connectionString := fmt.Sprintf("amqp://is:is@rabbitMQ:5672/is")
+
+    // Create a new AMQP connection
+    conn, err := amqp.Dial(connectionString)
+    if err != nil {
+        CheckError(err)
+        return false
+    }
+    defer conn.Close()
+
+    q, err := ch.QueueDeclare(
+        "coords_queue",          
+        false,                   // Durable
+        false,                   // Delete when unused
+        false,                   // Exclusive
+        false,                   // No-wait
+        nil,                     // Arguments
+    )
+    if err != nil {
+        CheckError(err)
+        return false
+    }
+
+    err = ch.Publish(
+        "",           // Exchange
+        q.Name,       // Routing key
+        false,        // Mandatory
+        false,        // Immediate
+        amqp.Publishing{
+            ContentType: "text/plain",
+            Body:        []byte(fmt.Sprintf("Get coordinates for Province: %s", provinceName)),
+        },
+    )
+    if err != nil {
+        CheckError(err)
+        return false
+    }
+
+    // Print success message
+    fmt.Println("Successfully sent province update message to RabbitMQ")
+
+    fmt.Printf("Get coordinates for Province: %s\n", provinceName)
+    return true
+}
+
+
 func sendMessageToBroker(entityName string, message string, ch *amqp.Channel) bool { //message
     // Create the connection string
     connectionString := fmt.Sprintf("amqp://is:is@rabbitMQ:5672/is")
@@ -139,7 +187,7 @@ func markFileAsMigrated(db *sql.DB, fileName string) {
 }
 
 func processWineReviews(wineReviews WineReviews, ch *amqp.Channel) {
-
+/*
     // Process Tasters
     for _, taster := range wineReviews.Tasters {
         tasterMessage := fmt.Sprintf("%s, %s",
@@ -163,10 +211,10 @@ func processWineReviews(wineReviews WineReviews, ch *amqp.Channel) {
         } else {
             fmt.Printf("Failed to send message for winery: %s\n", winery.Name)
         }
-    }
+    }*/
 
 	for _, country := range wineReviews.Countries {
-        countryMessage := fmt.Sprintf("%s", country.Name)
+       /* countryMessage := fmt.Sprintf("%s", country.Name)
 
 		// Send a message to the broker for each country
 		if success := sendMessageToBroker("Country", countryMessage, ch); success {
@@ -174,11 +222,11 @@ func processWineReviews(wineReviews WineReviews, ch *amqp.Channel) {
                
 		} else {
 			fmt.Printf("Failed to send message for country: %s\n", country.Name)
-		}
+		}*/
 
 		for _, province := range country.Provinces {
             // Send a message to the broker for each province
-			provinceMessage := fmt.Sprintf("%s, %s ",
+			/*provinceMessage := fmt.Sprintf("%s, %s ",
 				province.Name, country.Name)
 
             // Send a message to the broker for each province
@@ -188,7 +236,14 @@ func processWineReviews(wineReviews WineReviews, ch *amqp.Channel) {
             } else {
                 fmt.Printf("Failed to send message for province: %s\n", province.Name)
             }
-
+*/
+            // Send a message to the new queue for each province
+            if success := sendProvinceUpdateMessageToBroker(province.Name, ch); success {
+                fmt.Printf("Successfully sent province update message for province: %s\n", province.Name)
+            } else {
+                fmt.Printf("Failed to send province update message for province: %s\n", province.Name)
+            }
+/*
             for _, wine := range province.Wines {
                 // Send a message to the broker for each province
                 wineMessage := fmt.Sprintf("%s, %d, %s, %s, %s, %s, %s",
@@ -201,10 +256,9 @@ func processWineReviews(wineReviews WineReviews, ch *amqp.Channel) {
                 } else {
                     fmt.Printf("Failed to send message for wine: %s\n", wine.Name)
                 }
-            }
+            }*/
         }
     }
-
     
 }
 
