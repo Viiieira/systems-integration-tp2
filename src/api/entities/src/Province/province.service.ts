@@ -40,4 +40,30 @@ export class ProvinceService {
   async findAll(): Promise<any[]> {
     return this.prisma.province.findMany();
   }
+
+  async update(id: string, data: { name: string, country_name: string }): Promise<any> {
+    const { name, country_name } = data;
+
+    const country = await this.prisma.country.findFirst({
+      where: { name: country_name },
+    });
+
+    if (!country) {
+      throw new NotFoundException(`Country with name ${country_name} not found`);
+    }
+
+    return this.prisma.province.update({
+      where: { id },
+      data: {
+        name,
+        country: { connect: { id: country.id } },
+      },
+    });
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.prisma.province.delete({
+      where: { id },
+    });
+  }
 }

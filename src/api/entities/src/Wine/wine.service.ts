@@ -61,4 +61,42 @@ export class WineService {
   async findAll(): Promise<any[]> {
     return this.prisma.wine.findMany();
   }
+  
+  async update(id: string, data: { name?: string, points?: number, price?: string, variety?: string }): Promise<any> {
+    const existingWine = await this.prisma.wine.findUnique({
+      where: { id },
+    });
+  
+    if (!existingWine) {
+      throw new NotFoundException(`Wine with id ${id} not found`);
+    }
+  
+    // Convert price to number or leave it as is if undefined
+    const updatedData: { name?: string, points?: number, price?: number, variety?: string } = {
+      name: data.name,
+      points: data.points,
+      price: data.price ? parseFloat(data.price) : undefined,
+      variety: data.variety,
+    };
+  
+    return this.prisma.wine.update({
+      where: { id },
+      data: updatedData,
+    });
+  }
+  
+
+  async delete(id: string): Promise<void> {
+    const existingWine = await this.prisma.wine.findUnique({
+      where: { id },
+    });
+
+    if (!existingWine) {
+      throw new NotFoundException(`Wine with id ${id} not found`);
+    }
+
+    await this.prisma.wine.delete({
+      where: { id },
+    });
+  }
 }
