@@ -31,6 +31,9 @@ if __name__ == "__main__":
         print("Registering execute_query function...")
         server.register_function(execute_query)
 
+        print("Registering list_countries function...")
+        server.register_function(list_countries)
+
         print("Registering list_wines_country function...")
         server.register_function(list_wines_country)
 
@@ -46,8 +49,8 @@ if __name__ == "__main__":
         print("Registering list_avg_points_wines_province function...")
         server.register_function(list_avg_points_wines_province)
 
-        print("Registering hello_world test function...")
-        server.register_function(hello_world)
+        print("Registering list_countries test function...")
+        server.register_function(list_countries)
 
         # start the server
         print(f"Starting the RPC Server in port {PORT}...")

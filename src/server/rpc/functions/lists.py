@@ -116,6 +116,21 @@ def list_avg_points_wines_province(province):
         print(f"Error executing query: {e}")
         return average_points
     
+def list_countries():
+    countries = []
+    try:
+        # Construct the XPath query to get all wineries ordered by name
+        query = """
+                SELECT 
+                    unnest(xpath('/WineReviews/Countries/Country/@name', xml))::text AS country_name
+                FROM public.imported_documents;
+                """
 
-def hello_world():
-    return "Hello World"
+        results = execute_query(query)
+
+        for country in results:
+            countries.append(country)
+        return countries
+    except Exception as e:
+        print(f"Error executing query: {e}")
+        return countries

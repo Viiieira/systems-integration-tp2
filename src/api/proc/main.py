@@ -10,7 +10,7 @@ CORS(app)
 
 server = xmlrpc.client.ServerProxy('http://rpc-server:9000')
 
-# 4 - List All Wines belonging to a country
+# http://localhost:20004/api/wine/country
 @app.route('/api/wine/country')
 def get_wines_country():
     try:
@@ -39,7 +39,7 @@ def get_wines_country():
         error_message = f"Error calling 'api_list_wines_country': {e}"
         return jsonify({"error": error_message}), 500
 
-# 5 - List All Wines that match an input amount of points
+# http://localhost:20004/api/wine/getByPoints
 @app.route('/api/wine/getByPoints')
 def get_wines_amount_points():
     try:
@@ -74,7 +74,7 @@ def get_wines_amount_points():
         return jsonify({"error": error_message}), 500
         
 
-# 6 - Get Wineries Grouped by Province
+# http://localhost:20004/api/winery/province
 @app.route('/api/winery/province')
 def get_wineries_per_province():
     try:
@@ -86,7 +86,7 @@ def get_wineries_per_province():
         error_message = f"Error calling 'api_list_wineries_per_province': {e}"
         return jsonify({"error": error_message}), 500
 
-# 7 - Get Wineries Ordered By Name
+# http://localhost:20004/api/winery
 @app.route('/api/winery', methods=['GET'])
 def get_wineries_ord_name():
     try:
@@ -99,7 +99,7 @@ def get_wineries_ord_name():
         error_message = f"Error calling 'list_wineries_ord_name': {e}"
         return jsonify({"error": error_message}), 500
     
-# 8 - Get Average Points of Wines for a Province
+# http://localhost:20004/api/province/wine/avg_points
 @app.route('/api/province/wine/avg_points')
 def get_avg_points_province():
     try:
@@ -126,6 +126,19 @@ def get_avg_points_province():
 
     except Exception as e:
         error_message = f"Error calling 'get_avg_points_province': {e}"
+        return jsonify({"error": error_message}), 500
+    
+# http://localhost:20004/api/country
+@app.route('/api/country', methods=['GET'])
+def get_countries():
+    try:
+        countries = server.list_countries()
+        response_data = {"countries": countries}
+
+        return jsonify(response_data)
+
+    except Exception as e:
+        error_message = f"Error calling 'get_countries': {e}"
         return jsonify({"error": error_message}), 500
 
 if __name__ == '__main__':

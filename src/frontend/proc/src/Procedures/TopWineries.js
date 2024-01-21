@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import {
-  Box,
   CircularProgress,
   Container,
 } from "@mui/material";
@@ -29,7 +28,7 @@ function TopWineries() {
 
   return (
     <>
-      <h1>Top Wineries</h1>
+      <h1>Top Wineries (Ordered by Name)</h1>
 
       <Container
         maxWidth="100%"

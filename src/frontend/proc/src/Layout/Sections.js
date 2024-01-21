@@ -1,5 +1,6 @@
 import TopTeams from "../Procedures/TopTeams";
 import TopWineries from "../Procedures/TopWineries";
+import WinesByCountry from "../Procedures/WinesByCountry";
 
 const Sections = [
 
@@ -19,6 +20,12 @@ const Sections = [
         id: "top_wineries",
         label: "Top Wineries",
         content: <TopWineries/>
+    },
+
+    {
+        id: "wines_country",
+        label: "Wines By Country",
+        content: <WinesByCountry/>
     }
 
 ];
