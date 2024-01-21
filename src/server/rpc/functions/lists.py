@@ -12,8 +12,8 @@ def list_wines_country(country):
 
         results = execute_query(query)
 
-        for wine in results:
-            wines.append(wine)
+        wines = [wine[0] for wine in results]
+
         return wines
     except Exception as e:
         print(f"Error executing query: {e}")
@@ -128,8 +128,8 @@ def list_countries():
 
         results = execute_query(query)
 
-        for country in results:
-            countries.append(country)
+        countries = [country[0] for country in results]
+
         return countries
     except Exception as e:
         print(f"Error executing query: {e}")
