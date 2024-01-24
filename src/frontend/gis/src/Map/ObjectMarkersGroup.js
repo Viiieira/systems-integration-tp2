@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { LayerGroup, useMap } from 'react-leaflet';
 import { ObjectMarker } from './ObjectMarker';
-import api from '../api';
+import api from '../api/api';
 
 function ObjectMarkersGroup() {
   const map = useMap();
