@@ -5,7 +5,7 @@ def list_wines_country(country):
     wines = []
     try:
         query = f"""
-                SELECT
+                SELECT DISTINCT
                     unnest(xpath('/WineReviews/Countries/Country[@name="{country}"]/Provinces/Province/Wines/Wine/@name', xml))::text AS wine_name
                 FROM public.imported_documents;
                 """
@@ -24,7 +24,8 @@ def list_wines_amount_points(operator, points):
     wines = []
     try:
         query = f"""
-                SELECT unnest(xpath('/WineReviews/Countries/Country/Provinces/Province/Wines/Wine[@points {operator} {points}]/@name', xml))::text AS wine_name
+                SELECT DISTINCT
+                    unnest(xpath('/WineReviews/Countries/Country/Provinces/Province/Wines/Wine[@points {operator} {points}]/@name', xml))::text AS wine_name
                 FROM public.imported_documents;
                 """
 
@@ -42,7 +43,7 @@ def list_wineries_per_province():
     try:
         # Construct the XPath query to get all wineries grouped by province
         query = """
-                SELECT
+                SELECT DISTINCT
                     unnest(xpath('/WineReviews/Countries/Country/Provinces/Province[@id=//WineReviews/Wineries/Winery/@province_ref]/@name', xml))::text AS province_name,
                     unnest(xpath('/WineReviews/Wineries/Winery/@name', xml))::text AS winery_name
                 FROM public.imported_documents
@@ -71,7 +72,7 @@ def list_wineries_ord_name():
     try:
         # Construct the XPath query to get all wineries ordered by name
         query = """
-                SELECT 
+                SELECT DISTINCT
                     unnest(xpath('/WineReviews/Wineries/Winery/@name', xml))::text AS winery_name
                 FROM public.imported_documents
                 ORDER BY winery_name;
@@ -121,14 +122,14 @@ def list_countries():
     try:
         # Construct the XPath query to get all wineries ordered by name
         query = """
-                SELECT 
+                SELECT DISTINCT
                     unnest(xpath('/WineReviews/Countries/Country/@name', xml))::text AS country_name
                 FROM public.imported_documents;
                 """
 
         results = execute_query(query)
 
-        countries = [country[0] for country in results]
+        countries = [country[0] for country in results if country[0] and country[0].strip()]
 
         return countries
     except Exception as e:

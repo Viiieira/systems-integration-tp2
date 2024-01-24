@@ -10,25 +10,18 @@ CORS(app)
 
 server = xmlrpc.client.ServerProxy('http://rpc-server:9000')
 
-# http://localhost:20004/api/wine/country
-@app.route('/api/wine/country')
+# http://localhost:20004/api/wine
+@app.route('/api/wine')
 def get_wines_country():
     try:
-        if request.is_json:
-            data = request.json
-
-            if "country" not in data:
-                return jsonify({"error": "Country parameter is missing in the request JSON"}), 400
-            
-            country = data.get("country")
-        else:
-            return jsonify({"error": "Invalid request format. Expected JSON."}), 400
+        # Extracting country from the query parameters in the URL
+        country = request.args.get("country")
 
         if not country:
             return jsonify({"error": "Country parameter is missing or empty"}), 400
-            
+
         wines = server.list_wines_country(country)
-        
+
         if wines is not None:
             response_data = {"wines": wines}
             return jsonify(response_data)
@@ -43,26 +36,29 @@ def get_wines_country():
 @app.route('/api/wine/getByPoints')
 def get_wines_amount_points():
     try:
-        if request.is_json:
-            data = request.json
+        operator_mapping = {
+            "greater_than": ">",
+            "less_than": "<",
+            "equal_to": "=",
+            "greater_than_or_equal": ">=",
+            "less_than_or_equal": "<=",
+            "not_equal": "!=",
+        }
 
-            if "operator" not in data:
-                return jsonify({"error": "operator parameter is missing in the request JSON"}), 400
-            if "points" not in data:
-                return jsonify({"error": "points parameter is missing in the request JSON"}), 400
-                
-            operator = data.get("operator")
-            points = data.get("points")
-        else:
-            return jsonify({"error": "Invalid request format. Expected JSON."}), 400
+        operator = request.args.get("operator")
+        points = request.args.get("points")
 
         if not operator:
             return jsonify({"error": "operator parameter is missing or empty"}), 400
         if not points:
             return jsonify({"error": "points parameter is missing or empty"}), 400
-            
-        wines = server.list_wines_amount_points(operator, points)
-        
+
+        if operator not in operator_mapping:
+            return jsonify({"error": "Invalid operator"}), 400
+
+        actual_operator = operator_mapping[operator]
+        wines = server.list_wines_amount_points(actual_operator, points)
+
         if wines is not None:
             response_data = {"wines": wines}
             return jsonify(response_data)
@@ -103,15 +99,7 @@ def get_wineries_ord_name():
 @app.route('/api/province/wine/avg_points')
 def get_avg_points_province():
     try:
-        if request.is_json:
-            data = request.json
-
-            if "province" not in data:
-                return jsonify({"error": "province parameter is missing in the request JSON"}), 400
-            
-            province = data.get("province")
-        else:
-            return jsonify({"error": "Invalid request format. Expected JSON."}), 400
+        province = request.args.get("province")
  
         if not province:
             return jsonify({"error": "province parameter is missing or empty"}), 400
